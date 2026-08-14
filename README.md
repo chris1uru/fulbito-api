@@ -5,11 +5,19 @@ PostgreSQL, Spring Security y JWT.
 
 ## Requisitos
 
-- JDK 21. En esta PC quedo un Temurin 21 portatil en `E:\temurin-21\jdk-21.0.12+8`.
+- JDK 21 o superior, disponible mediante `JAVA_HOME` o en el `PATH`.
 - VS Code con `Extension Pack for Java` y `Spring Boot Extension Pack`.
 - La base PostgreSQL creada con el esquema acordado.
 
 Maven no necesita instalarse globalmente: el proyecto incluye Maven Wrapper (`mvnw.cmd`).
+Si no tenes un JDK, podes instalar [Eclipse Temurin 21](https://adoptium.net/temurin/releases/?version=21).
+Luego comproba la instalacion con `java -version` y `javac -version`.
+
+## Crear la base de desarrollo
+
+Ejecuta `database/schema.sql` completo desde el SQL Editor de Neon. El script crea todas
+las tablas, constraints, triggers y datos iniciales necesarios. **Tambien elimina primero
+todo lo que exista en el esquema `public` de esa base.**
 
 ## Configuracion local segura (PowerShell)
 
@@ -25,15 +33,13 @@ $env:JWT_SECRET='UN_SECRETO_ALEATORIO_LARGO_DE_32_CARACTERES_O_MAS'
 Luego:
 
 ```powershell
-cd E:\fulbito_api
 .\run-local.ps1
 ```
 
 Swagger queda disponible en `http://localhost:8080/swagger-ui.html`.
 
-En VS Code, usa `File > Open Folder` y abre `E:\fulbito_api`. La configuracion local
-`.vscode/settings.json` ya apunta al JDK portatil. Si copias el proyecto a otra PC,
-instala JDK 21 y cambia esa ruta, o configura `JAVA_HOME`.
+`run-local.ps1` detecta automaticamente el JDK configurado en `JAVA_HOME` o disponible
+en el `PATH`; no depende de la ubicacion del proyecto ni de una ruta fija del JDK.
 
 ## Organizacion
 

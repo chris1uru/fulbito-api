@@ -30,6 +30,9 @@ public class AuthService {
     @Transactional
     public AuthResponse registerPlayer(RegisterRequest request) { return register(request, UserRole.PLAYER); }
 
+    @Transactional
+    public AuthResponse registerOwner(RegisterRequest request) { return register(request, UserRole.OWNER); }
+
     private AuthResponse register(RegisterRequest request, UserRole role) {
         String email = request.email().trim().toLowerCase();
         if (users.existsByEmailIgnoreCase(email)) throw new ApiException(HttpStatus.CONFLICT, "El email ya esta registrado");

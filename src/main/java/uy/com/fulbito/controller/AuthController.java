@@ -21,6 +21,11 @@ public class AuthController {
         service.registerPlayer(request); 
     }
 
+    @PostMapping("/register-owner") @ResponseStatus(HttpStatus.CREATED)
+    public AuthResponse registerOwner(@Valid @RequestBody RegisterRequest request) {
+        return service.registerOwner(request);
+    }
+
     @PostMapping("/login") public AuthResponse login(@Valid @RequestBody LoginRequest request) {
         return 
         service.login(request); 
