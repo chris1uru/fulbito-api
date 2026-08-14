@@ -28,9 +28,6 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthResponse registerOwner(RegisterRequest request) { return register(request, UserRole.OWNER); }
-
-    @Transactional
     public AuthResponse registerPlayer(RegisterRequest request) { return register(request, UserRole.PLAYER); }
 
     private AuthResponse register(RegisterRequest request, UserRole role) {
