@@ -11,17 +11,23 @@ import java.util.*;
 
 @Service
 public class CourtService {
+
     private final CourtRepository courts; private final VenueService venueService;
+
     public CourtService(CourtRepository courts, VenueService venueService) { this.courts = courts; this.venueService = venueService; }
+
     @Transactional public CourtResponse create(UUID venueId, AppUser owner, CourtRequest request) {
         Court court = new Court(); court.setVenue(venueService.owned(venueId, owner)); apply(court, request); return response(courts.save(court));
     }
+
     @Transactional public CourtResponse update(UUID id, AppUser owner, CourtRequest request) {
         Court court = owned(id, owner); apply(court, request); return response(court);
     }
+
     @Transactional(readOnly = true) public List<CourtResponse> list(UUID venueId) {
         return courts.findByVenueIdAndActiveTrueAndVenueStatusOrderByName(venueId, uy.com.fulbito.domain.enums.VenueStatus.ACTIVE).stream().map(CourtService::response).toList();
     }
+    
     public Court owned(UUID id, AppUser owner) {
         return courts.findByIdAndVenueOwnerId(id, owner.getId())
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Cancha no encontrada o no te pertenece"));

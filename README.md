@@ -24,10 +24,11 @@ todo lo que exista en el esquema `public` de esa base.**
 La contrasena no se guarda en el repositorio. Defini las variables en la terminal antes de ejecutar:
 
 ```powershell
-$env:DB_URL='jdbc:postgresql://TU_HOST/fulbito_dev?sslmode=require&channelBinding=require'
+$env:DB_URL='jdbc:postgresql://ep-bold-fire-ac98wlhz-pooler.sa-east-1.aws.neon.tech/fulbito_dev?sslmode=require&channel_binding=require'
 $env:DB_USERNAME='neondb_owner'
 $env:DB_PASSWORD='TU_PASSWORD_ROTADA'
 $env:JWT_SECRET='UN_SECRETO_ALEATORIO_LARGO_DE_32_CARACTERES_O_MAS'
+("$env:JWT_SECRET = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(64))")
 ```
 
 Luego:

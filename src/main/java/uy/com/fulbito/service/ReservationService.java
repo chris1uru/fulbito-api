@@ -19,10 +19,15 @@ public class ReservationService {
 
     @Transactional
     public ReservationResponse create(AppUser actor,ReservationRequest r){
+
         Court court=courts.get(r.courtId());
+
         if (!court.isActive() || court.getVenue().getStatus()!=VenueStatus.ACTIVE) throw new ApiException(HttpStatus.CONFLICT,"La cancha no esta disponible");
+
         boolean owner=actor.getRole()==UserRole.OWNER || actor.getRole()==UserRole.ADMIN;
+
         if(owner && actor.getRole()!=UserRole.ADMIN && !court.getVenue().getOwner().getId().equals(actor.getId())) throw new ApiException(HttpStatus.FORBIDDEN,"La cancha no te pertenece");
+
         validateSlot(court,r.startsAt(),r.endsAt());
         Reservation value=new Reservation(); value.setCourt(court); value.setCreatedBy(actor);
         if(actor.getRole()==UserRole.PLAYER){value.setPlayer(actor); value.setPlayerNameSnapshot(actor.getFirstName()+" "+actor.getLastName()); value.setPlayerPhoneSnapshot(actor.getPhone());}
@@ -37,15 +42,21 @@ public class ReservationService {
     }
 
     @Transactional(readOnly=true) public List<ReservationResponse> mine(AppUser player){return reservations.findByPlayerIdOrderByStartsAtDesc(player.getId()).stream().map(ReservationService::response).toList();}
+
     @Transactional(readOnly=true) public List<ReservationResponse> ownerAgenda(AppUser owner,OffsetDateTime from,OffsetDateTime to){
         if(!to.isAfter(from))throw new ApiException(HttpStatus.BAD_REQUEST,"El rango de fechas es invalido");
         return reservations.findByCourtVenueOwnerIdAndStartsAtBetweenOrderByStartsAt(owner.getId(),from,to).stream().map(ReservationService::response).toList();
     }
+
     @Transactional public ReservationResponse markPaid(UUID id,AppUser owner){
-        Reservation r=owned(id,owner); if(r.getStatus()!=ReservationStatus.CONFIRMED)throw new ApiException(HttpStatus.CONFLICT,"Una reserva cancelada no puede cobrarse");
+        Reservation r=owned(id,owner); if(r.getStatus()!=ReservationStatus.CONFIRMED)
+            throw new ApiException(HttpStatus.CONFLICT,"Una reserva cancelada no puede cobrarse");
+
         if(r.getPaymentStatus()==PaymentStatus.PAID)return response(r);
+
         r.setPaymentStatus(PaymentStatus.PAID);r.setPaidAt(OffsetDateTime.now());r.setPaidConfirmedBy(owner);return response(r);
     }
+
     @Transactional public ReservationResponse cancelByOwner(UUID id,AppUser owner){Reservation r=owned(id,owner);cancel(r,ReservationStatus.CANCELLED_BY_OWNER);return response(r);}
     @Transactional public ReservationResponse cancelByPlayer(UUID id,AppUser player){Reservation r=reservations.findByIdAndPlayerId(id,player.getId()).orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"Reserva no encontrada"));cancel(r,ReservationStatus.CANCELLED_BY_PLAYER);return response(r);}
     private Reservation owned(UUID id,AppUser owner){return reservations.findByIdAndCourtVenueOwnerId(id,owner.getId()).orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"Reserva no encontrada o no pertenece a tus complejos"));}
@@ -62,6 +73,28 @@ public class ReservationService {
         });
         if(!inside)throw new ApiException(HttpStatus.CONFLICT,"El turno no coincide con el horario de apertura o con el inicio de un turno");
     }
-    private static ReservationResponse response(Reservation r){return new ReservationResponse(r.getId(),r.getCourt().getId(),r.getPlayer()==null?null:r.getPlayer().getId(),r.getStartsAt(),r.getEndsAt(),r.getStatus(),r.getPriceAmount(),r.getCurrency(),r.getPlayerNameSnapshot(),r.getPlayerPhoneSnapshot(),r.getNotes(),r.getPaymentStatus(),r.getPaidAt(),r.getCancelledAt());}
+    private static ReservationResponse response(Reservation r) {
+        return new ReservationResponse(
+            r.getId(),
+
+            r.getCourt().getId(),
+            r.getCourt().getName(),
+            r.getCourt().getVenue().getId(),
+            r.getCourt().getVenue().getName(),
+
+            r.getPlayer() == null ? null : r.getPlayer().getId(),
+            r.getStartsAt(),
+            r.getEndsAt(),
+            r.getStatus(),
+            r.getPriceAmount(),
+            r.getCurrency(),
+            r.getPlayerNameSnapshot(),
+            r.getPlayerPhoneSnapshot(),
+            r.getNotes(),
+            r.getPaymentStatus(),
+            r.getPaidAt(),
+            r.getCancelledAt()
+        );
+    }
     private String clean(String s){return s==null||s.isBlank()?null:s.trim();}
 }
