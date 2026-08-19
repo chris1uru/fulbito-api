@@ -31,8 +31,6 @@ public class AuthService {
     public AuthResponse registerPlayer(RegisterRequest request) { return register(request, UserRole.PLAYER); }
 
     @Transactional
-    public AuthResponse registerOwner(RegisterRequest request) { return register(request, UserRole.OWNER); }
-
     private AuthResponse register(RegisterRequest request, UserRole role) {
         String email = request.email().trim().toLowerCase();
         if (users.existsByEmailIgnoreCase(email)) throw new ApiException(HttpStatus.CONFLICT, "El email ya esta registrado");
@@ -65,6 +63,9 @@ public class AuthService {
     }
 
     public static UserResponse toResponse(AppUser u) {
-        return new UserResponse(u.getId(), u.getEmail(), u.getFirstName(), u.getLastName(), u.getPhone(), u.getRole());
+        return new UserResponse(
+            u.getId(), u.getEmail(), u.getFirstName(), u.getLastName(), u.getNationalId(),
+            u.getPhone(), u.getRole(), u.getStatus()
+        );
     }
 }

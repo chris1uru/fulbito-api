@@ -33,6 +33,7 @@ CREATE TABLE users (
     password_hash varchar(255) NOT NULL,
     first_name varchar(80) NOT NULL,
     last_name varchar(80) NOT NULL,
+    national_id varchar(8) UNIQUE,
     phone varchar(20),
     role user_role NOT NULL,
     status user_status NOT NULL,
@@ -42,6 +43,7 @@ CREATE TABLE users (
     CONSTRAINT ck_users_password_hash CHECK (btrim(password_hash) <> ''),
     CONSTRAINT ck_users_first_name CHECK (btrim(first_name) <> ''),
     CONSTRAINT ck_users_last_name CHECK (btrim(last_name) <> ''),
+    CONSTRAINT ck_users_national_id CHECK (national_id IS NULL OR national_id ~ '^[0-9]{7,8}$'),
     CONSTRAINT ck_users_phone CHECK (phone IS NULL OR phone ~ '^[+][1-9][0-9]{7,14}$')
 );
 
@@ -278,8 +280,8 @@ DECLARE
     owner_role user_role;
 BEGIN
     SELECT role INTO owner_role FROM users WHERE id = NEW.owner_id;
-    IF owner_role IS NULL OR owner_role NOT IN ('OWNER', 'ADMIN') THEN
-        RAISE EXCEPTION 'El propietario del complejo debe tener rol OWNER o ADMIN';
+    IF owner_role IS NULL OR owner_role <> 'OWNER' THEN
+        RAISE EXCEPTION 'El responsable del complejo debe tener rol OWNER';
     END IF;
     RETURN NEW;
 END;
@@ -295,7 +297,16 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
     venue_owner_id uuid;
+    actor_role user_role;
 BEGIN
+    SELECT role INTO actor_role
+      FROM users
+     WHERE id = NEW.created_by_user_id;
+
+    IF actor_role = 'ADMIN' THEN
+        RETURN NEW;
+    END IF;
+
     SELECT v.owner_id
       INTO venue_owner_id
       FROM courts c
@@ -303,7 +314,7 @@ BEGIN
      WHERE c.id = NEW.court_id;
 
     IF venue_owner_id IS NULL OR venue_owner_id <> NEW.created_by_user_id THEN
-        RAISE EXCEPTION 'El bloqueo debe ser creado por el propietario de la cancha';
+        RAISE EXCEPTION 'El bloqueo debe ser creado por el propietario de la cancha o un administrador';
     END IF;
     RETURN NEW;
 END;

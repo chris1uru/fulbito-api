@@ -28,7 +28,13 @@ $env:DB_URL='jdbc:postgresql://ep-bold-fire-ac98wlhz-pooler.sa-east-1.aws.neon.t
 $env:DB_USERNAME='neondb_owner'
 $env:DB_PASSWORD='TU_PASSWORD_ROTADA'
 $env:JWT_SECRET='UN_SECRETO_ALEATORIO_LARGO_DE_32_CARACTERES_O_MAS'
-("$env:JWT_SECRET = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(64))")
+
+$bytes = New-Object byte[] 64
+$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+$rng.GetBytes($bytes)
+$secret = [Convert]::ToBase64String($bytes)
+$env:JWT_SECRET = $secret
+$secret
 ```
 
 Luego:
@@ -54,7 +60,8 @@ en el `PATH`; no depende de la ubicacion del proyecto ni de una ruta fija del JD
 
 ## Seguridad
 
-El registro tiene rutas separadas para dueños y jugadores: el cliente nunca puede enviar un rol arbitrario.
+Solo los jugadores pueden registrarse públicamente. Los dueños son creados por un administrador,
+con email y cédula únicos, y luego se asignan explícitamente a uno o más complejos.
 Las contrasenas se guardan con BCrypt (factor 12), nunca en texto plano. El JWT contiene el ID y rol,
 vence a las ocho horas y debe enviarse como `Authorization: Bearer TOKEN`. La API no usa sesiones ni cookies.
 
@@ -64,13 +71,15 @@ calculan en el servidor.
 
 ## Flujo inicial
 
-1. `POST /api/auth/register-owner`
-2. Copiar `accessToken` y autorizar Swagger con `Bearer <token>`.
-3. `POST /api/owner/venues`
-4. `POST /api/owner/venues/{venueId}/courts`
-5. `POST /api/owner/venues/{venueId}/opening-hours`
-6. `POST /api/reservations`
-7. `PATCH /api/reservations/{id}/mark-paid`
+1. Iniciar sesión como `ADMIN` y copiar el `accessToken`.
+2. `POST /api/admin/users` para crear un usuario `OWNER`.
+3. `POST /api/admin/venues` indicando el `ownerId`.
+4. El dueño administra sus complejos mediante `/api/owner/**`.
+5. `POST /api/owner/venues/{venueId}/courts`.
+6. `POST /api/owner/venues/{venueId}/opening-hours`.
+7. `POST /api/reservations`.
+8. `PATCH /api/reservations/{id}/mark-paid`.
 
 Hibernate usa `ddl-auto=validate`: valida el esquema al arrancar pero no crea, borra ni modifica tablas.
+Flyway aplica migraciones incrementales antes de esa validación y toma el esquema inicial como versión 1.
 Los triggers y constraints de PostgreSQL siguen siendo la defensa final contra solapamientos.

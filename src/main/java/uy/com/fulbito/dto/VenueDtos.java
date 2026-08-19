@@ -26,8 +26,49 @@ public final class VenueDtos {
         @NotNull VenueStatus status,
         @NotNull @Valid LocationRequest location
     ) {}
-    public record LocationResponse(String departmentCode, String departmentName, String city, String neighborhood,
-                                   String street, String streetNumber, String reference, BigDecimal latitude, BigDecimal longitude) {}
-    public record VenueResponse(UUID id, UUID ownerId, String name, String description, String phone,
-                                String whatsappPhone, VenueStatus status, LocationResponse location) {}
+    public record AdminVenueRequest(
+        @NotNull UUID ownerId,
+        @NotBlank @Size(min=2,max=120) String name,
+        String description,
+        @Pattern(regexp="^\\+[1-9][0-9]{7,14}$") String phone,
+        @Pattern(regexp="^\\+[1-9][0-9]{7,14}$") String whatsappPhone,
+        @NotNull VenueStatus status,
+        @NotNull @Valid LocationRequest location
+    ) {
+        public VenueRequest venueRequest() {
+            return new VenueRequest(name, description, phone, whatsappPhone, status, location);
+        }
+    }
+    public record AssignOwnerRequest(@NotNull UUID ownerId) {}
+    public record UpdateVenueStatusRequest(@NotNull VenueStatus status) {}
+    public record OwnerSummaryResponse(
+        UUID id,
+        String email,
+        String firstName,
+        String lastName,
+        String nationalId
+    ) {}
+    public record LocationResponse(
+        String departmentCode,
+        String departmentName,
+        String city,
+        String neighborhood,
+        String street,
+        String streetNumber,
+        String reference,
+        BigDecimal latitude,
+        BigDecimal longitude
+    ) {}
+    public record VenueResponse(
+        UUID id,
+        UUID ownerId,
+        String name,
+        String description,
+        String phone,
+        String whatsappPhone,
+        VenueStatus status,
+        LocationResponse location,
+        String coverImageUrl,
+        OwnerSummaryResponse owner
+    ) {}
 }

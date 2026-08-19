@@ -45,7 +45,10 @@ public class ReservationService {
 
     @Transactional(readOnly=true) public List<ReservationResponse> ownerAgenda(AppUser owner,OffsetDateTime from,OffsetDateTime to){
         if(!to.isAfter(from))throw new ApiException(HttpStatus.BAD_REQUEST,"El rango de fechas es invalido");
-        return reservations.findByCourtVenueOwnerIdAndStartsAtBetweenOrderByStartsAt(owner.getId(),from,to).stream().map(ReservationService::response).toList();
+        List<Reservation> values = owner.getRole() == UserRole.ADMIN
+            ? reservations.findByStartsAtBetweenOrderByStartsAt(from, to)
+            : reservations.findByCourtVenueOwnerIdAndStartsAtBetweenOrderByStartsAt(owner.getId(),from,to);
+        return values.stream().map(ReservationService::response).toList();
     }
 
     @Transactional public ReservationResponse markPaid(UUID id,AppUser owner){
@@ -59,7 +62,11 @@ public class ReservationService {
 
     @Transactional public ReservationResponse cancelByOwner(UUID id,AppUser owner){Reservation r=owned(id,owner);cancel(r,ReservationStatus.CANCELLED_BY_OWNER);return response(r);}
     @Transactional public ReservationResponse cancelByPlayer(UUID id,AppUser player){Reservation r=reservations.findByIdAndPlayerId(id,player.getId()).orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"Reserva no encontrada"));cancel(r,ReservationStatus.CANCELLED_BY_PLAYER);return response(r);}
-    private Reservation owned(UUID id,AppUser owner){return reservations.findByIdAndCourtVenueOwnerId(id,owner.getId()).orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"Reserva no encontrada o no pertenece a tus complejos"));}
+    private Reservation owned(UUID id,AppUser owner){
+        if (owner.getRole() == UserRole.ADMIN)
+            return reservations.findById(id).orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"Reserva no encontrada"));
+        return reservations.findByIdAndCourtVenueOwnerId(id,owner.getId()).orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"Reserva no encontrada o no pertenece a tus complejos"));
+    }
     private void cancel(Reservation r,ReservationStatus status){if(r.getStatus()!=ReservationStatus.CONFIRMED)throw new ApiException(HttpStatus.CONFLICT,"La reserva ya esta cancelada");if(r.getPaymentStatus()==PaymentStatus.PAID)throw new ApiException(HttpStatus.CONFLICT,"No se puede cancelar una reserva marcada como paga");r.setStatus(status);r.setCancelledAt(OffsetDateTime.now());}
     private void validateSlot(Court court,OffsetDateTime start,OffsetDateTime end){
         if(!end.isAfter(start))throw new ApiException(HttpStatus.BAD_REQUEST,"El fin debe ser posterior al inicio");

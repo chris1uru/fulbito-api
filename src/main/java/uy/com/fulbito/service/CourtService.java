@@ -27,10 +27,22 @@ public class CourtService {
     @Transactional(readOnly = true) public List<CourtResponse> list(UUID venueId) {
         return courts.findByVenueIdAndActiveTrueAndVenueStatusOrderByName(venueId, uy.com.fulbito.domain.enums.VenueStatus.ACTIVE).stream().map(CourtService::response).toList();
     }
+
+    @Transactional(readOnly = true) public List<CourtResponse> listManaged(UUID venueId, AppUser actor) {
+        venueService.owned(venueId, actor);
+        return courts.findByVenueIdOrderByName(venueId).stream().map(CourtService::response).toList();
+    }
     
     public Court owned(UUID id, AppUser owner) {
+        if (owner.getRole() == uy.com.fulbito.domain.enums.UserRole.ADMIN) return get(id);
         return courts.findByIdAndVenueOwnerId(id, owner.getId())
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Cancha no encontrada o no te pertenece"));
+    }
+    public Court publicActive(UUID id) {
+        Court court = get(id);
+        if (!court.isActive() || court.getVenue().getStatus() != uy.com.fulbito.domain.enums.VenueStatus.ACTIVE)
+            throw new ApiException(HttpStatus.NOT_FOUND, "Cancha no encontrada");
+        return court;
     }
     public Court get(UUID id) { return courts.findById(id).orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Cancha no encontrada")); }
     private void apply(Court c, CourtRequest r) {

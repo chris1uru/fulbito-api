@@ -16,15 +16,15 @@ public class CourtController {
 
     public CourtController(CourtService service, CurrentUserService current) { this.service=service; this.current=current; }
 
-    @GetMapping("/api/public/venues/{venueId}/courts") public List<CourtResponse> list(@PathVariable UUID venueId) { return service.list(venueId); }
+    @GetMapping("/api/public/venues/{venueId}/courts")
+    public List<CourtResponse> list(@PathVariable UUID venueId) { return service.list(venueId); }
 
-    @GetMapping("/api/public/courts/{id}")
-    public CourtDtos getCourt(@PathVariable Long id) {
-        return 
+    @GetMapping("/api/owner/venues/{venueId}/courts") @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
+    public List<CourtResponse> listManaged(@PathVariable UUID venueId, Authentication a) {
+        return service.listManaged(venueId, current.require(a));
     }
 
     @PostMapping("/api/owner/venues/{venueId}/courts") @ResponseStatus(HttpStatus.CREATED) @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
-
     public CourtResponse create(@PathVariable UUID venueId, @Valid @RequestBody CourtRequest r, Authentication a) { return service.create(venueId,current.require(a),r); }
 
     @PutMapping("/api/owner/courts/{id}") @PreAuthorize("hasAnyRole('OWNER','ADMIN')")

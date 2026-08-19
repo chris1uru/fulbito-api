@@ -31,6 +31,14 @@ public class GlobalExceptionHandler {
             ? "La cancha ya esta ocupada total o parcialmente en ese horario"
             : details.contains("ex_opening_hours_no_overlap")
                 ? "El horario se superpone con otro horario del complejo"
+                : details.contains("ck_opening_hours_whole_minutes")
+                    ? "Los horarios deben comenzar y terminar en minutos exactos"
+                    : details.contains("ck_opening_hours_order")
+                        ? "La hora de cierre debe ser posterior a la apertura"
+                        : details.contains("ck_opening_hours_valid_range")
+                            ? "La hora de cierre debe ser posterior a la apertura en el mismo dia"
+                        : details.contains("ck_opening_hours_day")
+                            ? "El dia seleccionado no es valido"
                 : "La operacion viola una regla de integridad de la base de datos";
         return response(HttpStatus.CONFLICT, message, req, Map.of());
     }

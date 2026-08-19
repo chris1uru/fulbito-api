@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import uy.com.fulbito.domain.AppUser;
+import uy.com.fulbito.domain.enums.UserStatus;
 import uy.com.fulbito.error.ApiException;
 import uy.com.fulbito.repository.UserRepository;
 import java.util.UUID;
@@ -16,8 +17,11 @@ public class CurrentUserService {
         if (authentication == null || !authentication.isAuthenticated())
             throw new ApiException(HttpStatus.UNAUTHORIZED, "Se requiere autenticacion");
         try {
-            return users.findById(UUID.fromString(authentication.getName()))
+            AppUser user = users.findById(UUID.fromString(authentication.getName()))
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Usuario del token no encontrado"));
+            if (user.getStatus() != UserStatus.ACTIVE)
+                throw new ApiException(HttpStatus.FORBIDDEN, "La cuenta no esta activa");
+            return user;
         } catch (IllegalArgumentException ex) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "Token invalido");
         }
