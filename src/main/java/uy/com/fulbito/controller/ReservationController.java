@@ -21,6 +21,8 @@ public class ReservationController {
 
     @GetMapping("/mine") @PreAuthorize("hasRole('PLAYER')") public List<ReservationResponse> mine(Authentication a){return service.mine(current.require(a));}
 
+    @GetMapping("/{id}") public ReservationResponse one(@PathVariable UUID id,Authentication a){return service.one(id,current.require(a));}
+
     @GetMapping("/owner-agenda") @PreAuthorize("hasAnyRole('OWNER','ADMIN')") public List<ReservationResponse> agenda(@RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,@RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to,Authentication a){return service.ownerAgenda(current.require(a),from,to);}
 
     @PatchMapping("/{id}/mark-paid") @PreAuthorize("hasAnyRole('OWNER','ADMIN')") public ReservationResponse paid(@PathVariable UUID id,Authentication a){return service.markPaid(id,current.require(a));}

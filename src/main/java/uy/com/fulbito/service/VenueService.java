@@ -104,6 +104,7 @@ public class VenueService {
     private void apply(Venue v, VenueRequest r, boolean includeStatus) {
         v.setName(r.name().trim()); v.setDescription(clean(r.description())); v.setPhone(r.phone());
         v.setWhatsappPhone(r.whatsappPhone()); v.setTimezone("America/Montevideo");
+        if (r.cancellationNoticeHours() != null) v.setCancellationNoticeHours(r.cancellationNoticeHours());
         if (includeStatus) v.setStatus(r.status());
     }
     private void apply(VenueLocation l, LocationRequest r) {
@@ -134,7 +135,7 @@ public class VenueService {
         OwnerSummaryResponse ownerResponse = new OwnerSummaryResponse(
             owner.getId(), owner.getEmail(), owner.getFirstName(), owner.getLastName(), owner.getNationalId()
         );
-        return new VenueResponse(v.getId(), owner.getId(), v.getName(), v.getDescription(), v.getPhone(), v.getWhatsappPhone(), v.getStatus(), lr, coverImageUrl, ownerResponse);
+        return new VenueResponse(v.getId(), owner.getId(), v.getName(), v.getDescription(), v.getPhone(), v.getWhatsappPhone(), v.getCancellationNoticeHours(), v.getStatus(), lr, coverImageUrl, ownerResponse);
     }
     private String clean(String s) { return s == null || s.isBlank() ? null : s.trim(); }
 }

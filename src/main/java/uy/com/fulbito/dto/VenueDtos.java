@@ -23,6 +23,7 @@ public final class VenueDtos {
         String description,
         @Pattern(regexp="^\\+[1-9][0-9]{7,14}$") String phone,
         @Pattern(regexp="^\\+[1-9][0-9]{7,14}$") String whatsappPhone,
+        @Min(0) @Max(168) Short cancellationNoticeHours,
         @NotNull VenueStatus status,
         @NotNull @Valid LocationRequest location
     ) {}
@@ -32,11 +33,12 @@ public final class VenueDtos {
         String description,
         @Pattern(regexp="^\\+[1-9][0-9]{7,14}$") String phone,
         @Pattern(regexp="^\\+[1-9][0-9]{7,14}$") String whatsappPhone,
+        @Min(0) @Max(168) Short cancellationNoticeHours,
         @NotNull VenueStatus status,
         @NotNull @Valid LocationRequest location
     ) {
         public VenueRequest venueRequest() {
-            return new VenueRequest(name, description, phone, whatsappPhone, status, location);
+            return new VenueRequest(name, description, phone, whatsappPhone, cancellationNoticeHours, status, location);
         }
     }
     public record AssignOwnerRequest(@NotNull UUID ownerId) {}
@@ -66,6 +68,7 @@ public final class VenueDtos {
         String description,
         String phone,
         String whatsappPhone,
+        short cancellationNoticeHours,
         VenueStatus status,
         LocationResponse location,
         String coverImageUrl,

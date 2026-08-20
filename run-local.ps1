@@ -1,5 +1,24 @@
-if (-not $env:DB_URL -or -not $env:DB_USERNAME -or -not $env:DB_PASSWORD -or -not $env:JWT_SECRET) {
-    Write-Error 'Faltan DB_URL, DB_USERNAME, DB_PASSWORD o JWT_SECRET. Consulta README.md.'
+$envFile = Join-Path $PSScriptRoot '.env'
+if (Test-Path -LiteralPath $envFile) {
+    Get-Content -LiteralPath $envFile | ForEach-Object {
+        $line = $_.Trim()
+        if ($line -and -not $line.StartsWith('#')) {
+            $entry = $line -split '=', 2
+            if ($entry.Count -eq 2) {
+                $key = $entry[0].Trim()
+                $value = $entry[1].Trim()
+                if ($key -and -not (Test-Path -LiteralPath "Env:$key")) {
+                    Set-Item -LiteralPath "Env:$key" -Value $value
+                }
+            }
+        }
+    }
+}
+
+if (-not $env:DB_URL -or -not $env:DB_USERNAME -or -not $env:DB_PASSWORD -or
+    -not $env:JWT_SECRET -or -not $env:CLOUDINARY_CLOUD_NAME -or
+    -not $env:CLOUDINARY_API_KEY -or -not $env:CLOUDINARY_API_SECRET) {
+    Write-Error 'Faltan variables de Neon, JWT o Cloudinary. Consulta .env.example y README.md.'
     exit 1
 }
 

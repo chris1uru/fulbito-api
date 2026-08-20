@@ -28,6 +28,11 @@ public class CourtService {
         return courts.findByVenueIdAndActiveTrueAndVenueStatusOrderByName(venueId, uy.com.fulbito.domain.enums.VenueStatus.ACTIVE).stream().map(CourtService::response).toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<Court> publicActive() {
+        return courts.findPublicActive(uy.com.fulbito.domain.enums.VenueStatus.ACTIVE);
+    }
+
     @Transactional(readOnly = true) public List<CourtResponse> listManaged(UUID venueId, AppUser actor) {
         venueService.owned(venueId, actor);
         return courts.findByVenueIdOrderByName(venueId).stream().map(CourtService::response).toList();

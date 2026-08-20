@@ -6,4 +6,7 @@ public interface VenueImageRepository extends JpaRepository<VenueImage, UUID> {
     List<VenueImage> findByVenueIdOrderBySortOrder(UUID venueId);
     Optional<VenueImage> findByVenueIdAndCoverTrue(UUID venueId);
     List<VenueImage> findByVenueIdInAndCoverTrue(Collection<UUID> venueIds);
+    long countByVenueId(UUID venueId);
+    boolean existsByStorageKey(String storageKey);
+    Optional<VenueImage> findFirstByVenueIdOrderBySortOrderAsc(UUID venueId);
 }

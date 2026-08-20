@@ -11,6 +11,12 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     List<Reservation> findByCourtIdAndStatusAndEndsAtAfterAndStartsAtBefore(
         UUID courtId, ReservationStatus status, OffsetDateTime from, OffsetDateTime to
     );
+    List<Reservation> findByCourtIdInAndStatusAndEndsAtAfterAndStartsAtBefore(
+        Collection<UUID> courtIds,
+        ReservationStatus status,
+        OffsetDateTime from,
+        OffsetDateTime to
+    );
     Optional<Reservation> findByIdAndCourtVenueOwnerId(UUID id, UUID ownerId);
     Optional<Reservation> findByIdAndPlayerId(UUID id, UUID playerId);
 }

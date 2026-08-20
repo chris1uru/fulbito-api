@@ -36,12 +36,26 @@ public class ReservationService {
             value.setPlayerNameSnapshot(r.playerName().trim()); value.setPlayerPhoneSnapshot(r.playerPhone());
         }
         value.setStartsAt(r.startsAt()); value.setEndsAt(r.endsAt()); value.setStatus(ReservationStatus.CONFIRMED);
+        value.setCancellationNoticeHours(court.getVenue().getCancellationNoticeHours()); value.setLateCancellation(false);
         value.setPriceAmount(court.getPricePerSlot()); value.setCurrency("UYU"); value.setNotes(clean(r.notes())); value.setPaymentStatus(PaymentStatus.PENDING);
         // saveAndFlush fuerza el INSERT ahora: si hay solapamiento, el constraint se traduce a HTTP 409.
         return response(reservations.saveAndFlush(value));
     }
 
     @Transactional(readOnly=true) public List<ReservationResponse> mine(AppUser player){return reservations.findByPlayerIdOrderByStartsAtDesc(player.getId()).stream().map(ReservationService::response).toList();}
+
+    @Transactional(readOnly=true)
+    public ReservationResponse one(UUID id,AppUser actor){
+        Reservation reservation = switch (actor.getRole()) {
+            case PLAYER -> reservations.findByIdAndPlayerId(id,actor.getId())
+                .orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"Reserva no encontrada"));
+            case OWNER -> reservations.findByIdAndCourtVenueOwnerId(id,actor.getId())
+                .orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"Reserva no encontrada"));
+            case ADMIN -> reservations.findById(id)
+                .orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"Reserva no encontrada"));
+        };
+        return response(reservation);
+    }
 
     @Transactional(readOnly=true) public List<ReservationResponse> ownerAgenda(AppUser owner,OffsetDateTime from,OffsetDateTime to){
         if(!to.isAfter(from))throw new ApiException(HttpStatus.BAD_REQUEST,"El rango de fechas es invalido");
@@ -67,11 +81,18 @@ public class ReservationService {
             return reservations.findById(id).orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"Reserva no encontrada"));
         return reservations.findByIdAndCourtVenueOwnerId(id,owner.getId()).orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"Reserva no encontrada o no pertenece a tus complejos"));
     }
-    private void cancel(Reservation r,ReservationStatus status){if(r.getStatus()!=ReservationStatus.CONFIRMED)throw new ApiException(HttpStatus.CONFLICT,"La reserva ya esta cancelada");if(r.getPaymentStatus()==PaymentStatus.PAID)throw new ApiException(HttpStatus.CONFLICT,"No se puede cancelar una reserva marcada como paga");r.setStatus(status);r.setCancelledAt(OffsetDateTime.now());}
+    private void cancel(Reservation r,ReservationStatus status){
+        if(r.getStatus()!=ReservationStatus.CONFIRMED)throw new ApiException(HttpStatus.CONFLICT,"La reserva ya esta cancelada");
+        if(r.getPaymentStatus()==PaymentStatus.PAID)throw new ApiException(HttpStatus.CONFLICT,"No se puede cancelar una reserva marcada como paga");
+        OffsetDateTime cancelledAt=OffsetDateTime.now();
+        r.setStatus(status);r.setCancelledAt(cancelledAt);
+        r.setLateCancellation(status==ReservationStatus.CANCELLED_BY_PLAYER && cancelledAt.isAfter(r.getStartsAt().minusHours(r.getCancellationNoticeHours())));
+    }
     private void validateSlot(Court court,OffsetDateTime start,OffsetDateTime end){
         if(!end.isAfter(start))throw new ApiException(HttpStatus.BAD_REQUEST,"El fin debe ser posterior al inicio");
         if(Duration.between(start,end).toMinutes()!=court.getSlotMinutes())throw new ApiException(HttpStatus.BAD_REQUEST,"La reserva debe durar exactamente "+court.getSlotMinutes()+" minutos");
         ZonedDateTime localStart=start.atZoneSameInstant(URUGUAY), localEnd=end.atZoneSameInstant(URUGUAY);
+        if(!localStart.isAfter(ZonedDateTime.now(URUGUAY)))throw new ApiException(HttpStatus.CONFLICT,"No se puede reservar un turno pasado");
         if(!localStart.toLocalDate().equals(localEnd.toLocalDate()))throw new ApiException(HttpStatus.BAD_REQUEST,"La reserva debe comenzar y terminar el mismo dia local");
         short day=(short)localStart.getDayOfWeek().getValue();
         boolean inside=hours.findByVenueIdOrderByDayOfWeekAscOpensAtAsc(court.getVenue().getId()).stream().filter(h->h.getDayOfWeek()==day).anyMatch(h->{
@@ -98,6 +119,9 @@ public class ReservationService {
             r.getPlayerNameSnapshot(),
             r.getPlayerPhoneSnapshot(),
             r.getNotes(),
+            r.getCancellationNoticeHours(),
+            r.getStartsAt().minusHours(r.getCancellationNoticeHours()),
+            r.isLateCancellation(),
             r.getPaymentStatus(),
             r.getPaidAt(),
             r.getCancelledAt()

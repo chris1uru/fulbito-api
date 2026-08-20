@@ -31,6 +31,9 @@ public final class ReservationDtos {
     String playerName,
     String playerPhone,
     String notes,
+    short cancellationNoticeHours,
+    OffsetDateTime cancellationDeadline,
+    boolean lateCancellation,
     PaymentStatus paymentStatus,
     OffsetDateTime paidAt,
     OffsetDateTime cancelledAt
