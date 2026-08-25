@@ -4,6 +4,7 @@ import uy.com.fulbito.domain.CourtImage;
 import java.util.*;
 public interface CourtImageRepository extends JpaRepository<CourtImage, UUID> {
     List<CourtImage> findByCourtIdOrderBySortOrder(UUID courtId);
+    List<CourtImage> findByCourtIdInOrderByCourtIdAscSortOrderAsc(Collection<UUID> courtIds);
     long countByCourtId(UUID courtId);
     boolean existsByStorageKey(String storageKey);
 }

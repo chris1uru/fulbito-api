@@ -12,6 +12,8 @@ import uy.com.fulbito.service.AvailabilityService;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
 @RestController
 public class AvailabilityController {
@@ -32,8 +34,9 @@ public class AvailabilityController {
     @GetMapping("/api/public/venues/availability")
     public VenueAvailabilitySearchResponse venueAvailability(
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime time
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime time,
+        @RequestParam(defaultValue = "0") @Min(0) @Max(60) int windowMinutes
     ) {
-        return availability.venueAvailability(date, time);
+        return availability.venueAvailability(date, time, windowMinutes);
     }
 }

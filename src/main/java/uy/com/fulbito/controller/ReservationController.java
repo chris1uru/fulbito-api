@@ -19,11 +19,19 @@ public class ReservationController {
 
     @PostMapping @ResponseStatus(HttpStatus.CREATED) public ReservationResponse create(@Valid @RequestBody ReservationRequest r,Authentication a){return service.create(current.require(a),r);}
 
-    @GetMapping("/mine") @PreAuthorize("hasRole('PLAYER')") public List<ReservationResponse> mine(Authentication a){return service.mine(current.require(a));}
+    @GetMapping("/mine") @PreAuthorize("hasRole('PLAYER')") public List<ReservationResponse> mine(
+        @RequestParam(defaultValue = "100") @jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(100) int limit,
+        Authentication a
+    ){return service.mine(current.require(a), limit);}
 
     @GetMapping("/{id}") public ReservationResponse one(@PathVariable UUID id,Authentication a){return service.one(id,current.require(a));}
 
-    @GetMapping("/owner-agenda") @PreAuthorize("hasAnyRole('OWNER','ADMIN')") public List<ReservationResponse> agenda(@RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,@RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to,Authentication a){return service.ownerAgenda(current.require(a),from,to);}
+    @GetMapping("/owner-agenda") @PreAuthorize("hasAnyRole('OWNER','ADMIN')") public List<ReservationResponse> agenda(
+        @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
+        @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to,
+        @RequestParam(required=false) UUID venueId,
+        Authentication a
+    ){return service.ownerAgenda(current.require(a),from,to,venueId);}
 
     @PatchMapping("/{id}/mark-paid") @PreAuthorize("hasAnyRole('OWNER','ADMIN')") public ReservationResponse paid(@PathVariable UUID id,Authentication a){return service.markPaid(id,current.require(a));}
 

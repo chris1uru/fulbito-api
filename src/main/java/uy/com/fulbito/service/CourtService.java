@@ -7,25 +7,28 @@ import uy.com.fulbito.domain.*;
 import uy.com.fulbito.dto.CourtDtos.*;
 import uy.com.fulbito.error.ApiException;
 import uy.com.fulbito.repository.CourtRepository;
+import uy.com.fulbito.repository.CourtImageRepository;
 import java.util.*;
 
 @Service
 public class CourtService {
 
-    private final CourtRepository courts; private final VenueService venueService;
+    private final CourtRepository courts; private final CourtImageRepository images; private final VenueService venueService;
 
-    public CourtService(CourtRepository courts, VenueService venueService) { this.courts = courts; this.venueService = venueService; }
+    public CourtService(CourtRepository courts, CourtImageRepository images, VenueService venueService) {
+        this.courts = courts; this.images = images; this.venueService = venueService;
+    }
 
     @Transactional public CourtResponse create(UUID venueId, AppUser owner, CourtRequest request) {
-        Court court = new Court(); court.setVenue(venueService.owned(venueId, owner)); apply(court, request); return response(courts.save(court));
+        Court court = new Court(); court.setVenue(venueService.owned(venueId, owner)); apply(court, request); return response(courts.save(court), null);
     }
 
     @Transactional public CourtResponse update(UUID id, AppUser owner, CourtRequest request) {
-        Court court = owned(id, owner); apply(court, request); return response(court);
+        Court court = owned(id, owner); apply(court, request); return response(court, coverUrl(id));
     }
 
     @Transactional(readOnly = true) public List<CourtResponse> list(UUID venueId) {
-        return courts.findByVenueIdAndActiveTrueAndVenueStatusOrderByName(venueId, uy.com.fulbito.domain.enums.VenueStatus.ACTIVE).stream().map(CourtService::response).toList();
+        return responses(courts.findByVenueIdAndActiveTrueAndVenueStatusOrderByName(venueId, uy.com.fulbito.domain.enums.VenueStatus.ACTIVE));
     }
 
     @Transactional(readOnly = true)
@@ -35,7 +38,7 @@ public class CourtService {
 
     @Transactional(readOnly = true) public List<CourtResponse> listManaged(UUID venueId, AppUser actor) {
         venueService.owned(venueId, actor);
-        return courts.findByVenueIdOrderByName(venueId).stream().map(CourtService::response).toList();
+        return responses(courts.findByVenueIdOrderByName(venueId));
     }
     
     public Court owned(UUID id, AppUser owner) {
@@ -55,5 +58,17 @@ public class CourtService {
         c.setName(r.name().trim()); c.setFootballFormat(r.footballFormat()); c.setSurface(r.surface()); c.setCovered(r.covered());
         c.setPricePerSlot(r.pricePerSlot()); c.setCurrency("UYU"); c.setSlotMinutes(r.slotMinutes()); c.setActive(r.active());
     }
-    public static CourtResponse response(Court c) { return new CourtResponse(c.getId(), c.getVenue().getId(), c.getName(), c.getFootballFormat(), c.getSurface(), c.isCovered(), c.getPricePerSlot(), c.getCurrency(), c.getSlotMinutes(), c.isActive()); }
+    private List<CourtResponse> responses(List<Court> values) {
+        if (values.isEmpty()) return List.of();
+        Map<UUID, String> covers = new HashMap<>();
+        images.findByCourtIdInOrderByCourtIdAscSortOrderAsc(values.stream().map(Court::getId).toList())
+            .forEach(image -> covers.putIfAbsent(image.getCourt().getId(), image.getUrl()));
+        return values.stream().map(court -> response(court, covers.get(court.getId()))).toList();
+    }
+    private String coverUrl(UUID courtId) {
+        return images.findByCourtIdOrderBySortOrder(courtId).stream().findFirst().map(CourtImage::getUrl).orElse(null);
+    }
+    public static CourtResponse response(Court c, String coverImageUrl) {
+        return new CourtResponse(c.getId(), c.getVenue().getId(), c.getName(), c.getFootballFormat(), c.getSurface(), c.isCovered(), c.getPricePerSlot(), c.getCurrency(), c.getSlotMinutes(), c.isActive(), coverImageUrl);
+    }
 }

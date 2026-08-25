@@ -15,6 +15,8 @@ import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.cors.*;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
@@ -34,7 +36,9 @@ public class SecurityConfig {
     @Bean
     JwtDecoder jwtDecoder(@Value("${app.jwt.secret}") String secret) {
         var key = new SecretKeySpec(secretBytes(secret), "HmacSHA256");
-        return NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build();
+        NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build();
+        decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer("fulbito-api"));
+        return decoder;
     }
 
     @Bean
@@ -48,22 +52,31 @@ public class SecurityConfig {
     }
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationConverter converter) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationConverter converter, AuditLogFilter auditLogFilter) throws Exception {
         return http
             .csrf(csrf -> csrf.disable()) // API stateless con Bearer token, no usa cookies de sesion.
             .cors(Customizer.withDefaults())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register-player").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/public/**", "/api/departments/**").permitAll()
                 .anyRequest().authenticated())
             .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(converter)))
+            .headers(headers -> headers
+                .contentTypeOptions(Customizer.withDefaults())
+                .frameOptions(frame -> frame.deny())
+                .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31_536_000)))
+            .addFilterAfter(auditLogFilter, BearerTokenAuthenticationFilter.class)
             .build();
     }
 
     @Bean
+    AuditLogFilter auditLogFilter(JdbcTemplate jdbc) { return new AuditLogFilter(jdbc); }
+
+    @Bean
     CorsConfigurationSource corsConfigurationSource(@Value("${app.cors.allowed-origins}") List<String> origins) {
+        if (origins.isEmpty() || origins.stream().anyMatch(origin -> origin == null || origin.isBlank() || origin.contains("*")))
+            throw new IllegalStateException("CORS_ALLOWED_ORIGINS debe contener origenes explicitos");
         var config = new CorsConfiguration();
         config.setAllowedOrigins(origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));

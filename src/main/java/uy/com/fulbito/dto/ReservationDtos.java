@@ -22,6 +22,7 @@ public final class ReservationDtos {
     String courtName,
     UUID venueId,
     String venueName,
+    String courtImageUrl,
     UUID playerId,
     OffsetDateTime startsAt,
     OffsetDateTime endsAt,

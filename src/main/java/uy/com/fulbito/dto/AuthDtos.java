@@ -11,10 +11,14 @@ public final class AuthDtos {
         @NotBlank @Size(max=80) String firstName,
         @NotBlank @Size(max=80) String lastName,
         @NotBlank @Email @Size(max=254) String email,
-        @NotBlank @Size(min=8, max=72) String password,
+        @NotBlank @Size(min=10, max=72) String password,
         @Pattern(regexp="^\\+[1-9][0-9]{7,14}$") String phone
     ) {}
     public record LoginRequest(@NotBlank @Email String email, @NotBlank String password) {}
+    public record ChangePasswordRequest(
+        @NotBlank @Size(max=72) String currentPassword,
+        @NotBlank @Size(min=10, max=72) String newPassword
+    ) {}
     public record UpdateProfileRequest(
         @NotBlank @Size(max=80) String firstName,
         @NotBlank @Size(max=80) String lastName,

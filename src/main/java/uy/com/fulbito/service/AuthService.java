@@ -12,8 +12,12 @@ import uy.com.fulbito.domain.enums.*;
 import uy.com.fulbito.dto.AuthDtos.*;
 import uy.com.fulbito.error.ApiException;
 import uy.com.fulbito.repository.UserRepository;
+import uy.com.fulbito.repository.RevokedTokenRepository;
+import uy.com.fulbito.domain.RevokedToken;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import java.time.*;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -21,10 +25,12 @@ public class AuthService {
     private final PasswordEncoder passwords;
     private final JwtEncoder jwtEncoder;
     private final Duration expiration;
+    private final RevokedTokenRepository revokedTokens;
 
     public AuthService(UserRepository users, PasswordEncoder passwords, JwtEncoder jwtEncoder,
-                       @Value("${app.jwt.expiration}") Duration expiration) {
-        this.users = users; this.passwords = passwords; this.jwtEncoder = jwtEncoder; this.expiration = expiration;
+                       RevokedTokenRepository revokedTokens, @Value("${app.jwt.expiration}") Duration expiration) {
+        this.users = users; this.passwords = passwords; this.jwtEncoder = jwtEncoder;
+        this.revokedTokens = revokedTokens; this.expiration = expiration;
     }
 
     @Transactional
@@ -52,10 +58,25 @@ public class AuthService {
         return response(user);
     }
 
+    @Transactional
+    public void logout(JwtAuthenticationToken authentication) {
+        UUID tokenId = UUID.fromString(authentication.getToken().getId());
+        if (revokedTokens.existsById(tokenId)) return;
+        RevokedToken revoked = new RevokedToken();
+        revoked.setId(tokenId);
+        revoked.setUserId(UUID.fromString(authentication.getName()));
+        revoked.setExpiresAt(authentication.getToken().getExpiresAt());
+        revoked.setRevokedAt(Instant.now());
+        revokedTokens.save(revoked);
+        revokedTokens.deleteExpired(Instant.now());
+    }
+
     private AuthResponse response(AppUser user) {
         Instant now = Instant.now();
         JwtClaimsSet claims = JwtClaimsSet.builder().issuer("fulbito-api").issuedAt(now)
             .expiresAt(now.plus(expiration)).subject(user.getId().toString())
+            .id(UUID.randomUUID().toString())
+            .claim("ver", user.getAuthVersion())
             .claim("roles", List.of("ROLE_" + user.getRole().name())).build();
         JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
         String token = jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();

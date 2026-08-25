@@ -18,6 +18,9 @@ import uy.com.fulbito.dto.ImageDtos.UploadSignatureResponse;
 import uy.com.fulbito.dto.ImageDtos.VenueImageRequest;
 import uy.com.fulbito.security.CurrentUserService;
 import uy.com.fulbito.service.ImageService;
+import uy.com.fulbito.security.RateLimitService;
+import uy.com.fulbito.domain.AppUser;
+import java.time.Duration;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,10 +29,12 @@ import java.util.UUID;
 public class ImageController {
     private final ImageService service;
     private final CurrentUserService current;
+    private final RateLimitService rateLimits;
 
-    public ImageController(ImageService service, CurrentUserService current) {
+    public ImageController(ImageService service, CurrentUserService current, RateLimitService rateLimits) {
         this.service = service;
         this.current = current;
+        this.rateLimits = rateLimits;
     }
 
     @GetMapping("/api/public/courts/{id}/images")
@@ -45,13 +50,17 @@ public class ImageController {
     @PostMapping("/api/owner/venues/{id}/images/upload-signature")
     @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
     public UploadSignatureResponse prepareVenue(@PathVariable UUID id, Authentication auth) {
-        return service.prepareVenue(id, current.require(auth));
+        AppUser actor = current.require(auth);
+        rateLimits.check("image-upload", actor.getId().toString(), 30, Duration.ofHours(1));
+        return service.prepareVenue(id, actor);
     }
 
     @PostMapping("/api/owner/courts/{id}/images/upload-signature")
     @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
     public UploadSignatureResponse prepareCourt(@PathVariable UUID id, Authentication auth) {
-        return service.prepareCourt(id, current.require(auth));
+        AppUser actor = current.require(auth);
+        rateLimits.check("image-upload", actor.getId().toString(), 30, Duration.ofHours(1));
+        return service.prepareCourt(id, actor);
     }
 
     @PostMapping("/api/owner/venues/{id}/images")

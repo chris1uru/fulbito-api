@@ -76,15 +76,22 @@ public class VenueService {
     }
 
     @Transactional(readOnly = true)
-    public List<VenueResponse> publicList() {
-        return withCoverImages(venues.findByStatusOrderByName(VenueStatus.ACTIVE));
+    public List<PublicVenueResponse> publicList() {
+        List<Venue> active = venues.findByStatusOrderByName(VenueStatus.ACTIVE);
+        Map<UUID, String> covers = coverUrls(active);
+        Map<UUID, VenueLocation> venueLocations = locations(active);
+        return active.stream().map(venue -> publicResponse(
+            venue,
+            venueLocations.get(venue.getId()),
+            covers.get(venue.getId())
+        )).toList();
     }
 
     @Transactional(readOnly = true)
-    public VenueResponse publicOne(UUID id) {
+    public PublicVenueResponse publicOne(UUID id) {
         Venue venue = venues.findById(id).filter(v -> v.getStatus() == VenueStatus.ACTIVE)
             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Complejo no encontrado"));
-        return withLocation(venue, coverUrl(venue.getId()));
+        return publicResponse(venue, locations.findByVenueId(id).orElse(null), coverUrl(id));
     }
 
     public Venue owned(UUID id, AppUser owner) {
@@ -115,12 +122,26 @@ public class VenueService {
         l.setLatitude(r.latitude()); l.setLongitude(r.longitude());
     }
     private List<VenueResponse> withCoverImages(List<Venue> venues) {
-        Map<UUID, String> coverUrls = new HashMap<>();
-        if (!venues.isEmpty()) {
-            venueImages.findByVenueIdInAndCoverTrue(venues.stream().map(Venue::getId).toList())
-                .forEach(image -> coverUrls.put(image.getVenue().getId(), image.getUrl()));
+        Map<UUID, String> coverUrls = coverUrls(venues);
+        Map<UUID, VenueLocation> venueLocations = locations(venues);
+        return venues.stream().map(venue -> response(
+            venue, venueLocations.get(venue.getId()), coverUrls.get(venue.getId())
+        )).toList();
+    }
+    private Map<UUID, String> coverUrls(List<Venue> values) {
+        Map<UUID, String> result = new HashMap<>();
+        if (!values.isEmpty()) {
+            venueImages.findByVenueIdInAndCoverTrue(values.stream().map(Venue::getId).toList())
+                .forEach(image -> result.put(image.getVenue().getId(), image.getUrl()));
         }
-        return venues.stream().map(venue -> withLocation(venue, coverUrls.get(venue.getId()))).toList();
+        return result;
+    }
+    private Map<UUID, VenueLocation> locations(List<Venue> values) {
+        if (values.isEmpty()) return Map.of();
+        Map<UUID, VenueLocation> result = new HashMap<>();
+        locations.findByVenueIdIn(values.stream().map(Venue::getId).toList())
+            .forEach(location -> result.put(location.getVenue().getId(), location));
+        return result;
     }
     private String coverUrl(UUID venueId) {
         return venueImages.findByVenueIdAndCoverTrue(venueId).map(VenueImage::getUrl).orElse(null);
@@ -129,13 +150,24 @@ public class VenueService {
         VenueLocation l = locations.findByVenueId(venue.getId()).orElse(null); return response(venue, l, coverImageUrl);
     }
     private VenueResponse response(Venue v, VenueLocation l, String coverImageUrl) {
-        LocationResponse lr = l == null ? null : new LocationResponse(l.getDepartment().getCode(), l.getDepartment().getName(),
-            l.getCity(), l.getNeighborhood(), l.getStreet(), l.getStreetNumber(), l.getReference(), l.getLatitude(), l.getLongitude());
+        LocationResponse lr = locationResponse(l);
         AppUser owner = v.getOwner();
         OwnerSummaryResponse ownerResponse = new OwnerSummaryResponse(
             owner.getId(), owner.getEmail(), owner.getFirstName(), owner.getLastName(), owner.getNationalId()
         );
         return new VenueResponse(v.getId(), owner.getId(), v.getName(), v.getDescription(), v.getPhone(), v.getWhatsappPhone(), v.getCancellationNoticeHours(), v.getStatus(), lr, coverImageUrl, ownerResponse);
+    }
+    private PublicVenueResponse publicResponse(Venue v, VenueLocation l, String coverImageUrl) {
+        return new PublicVenueResponse(
+            v.getId(), v.getName(), v.getDescription(), v.getPhone(), v.getWhatsappPhone(),
+            v.getCancellationNoticeHours(), locationResponse(l), coverImageUrl
+        );
+    }
+    private LocationResponse locationResponse(VenueLocation l) {
+        return l == null ? null : new LocationResponse(
+            l.getDepartment().getCode(), l.getDepartment().getName(), l.getCity(), l.getNeighborhood(),
+            l.getStreet(), l.getStreetNumber(), l.getReference(), l.getLatitude(), l.getLongitude()
+        );
     }
     private String clean(String s) { return s == null || s.isBlank() ? null : s.trim(); }
 }

@@ -14,6 +14,7 @@ public class AppUser extends BaseEntity {
     @Column(name = "last_name", nullable = false, length = 80) private String lastName;
     @Column(name = "national_id", unique = true, length = 8) private String nationalId;
     @Column(length = 20) private String phone;
+    @Column(name = "auth_version", nullable = false) private int authVersion;
 
     @Enumerated(EnumType.STRING) @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(nullable = false, columnDefinition = "user_role") private UserRole role;
@@ -36,4 +37,6 @@ public class AppUser extends BaseEntity {
     public void setRole(UserRole role) { this.role = role; }
     public UserStatus getStatus() { return status; }
     public void setStatus(UserStatus status) { this.status = status; }
+    public int getAuthVersion() { return authVersion; }
+    public void setAuthVersion(int authVersion) { this.authVersion = authVersion; }
 }

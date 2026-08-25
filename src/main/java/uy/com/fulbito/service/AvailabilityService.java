@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class AvailabilityService {
@@ -73,6 +74,11 @@ public class AvailabilityService {
 
     @Transactional(readOnly = true)
     public VenueAvailabilitySearchResponse venueAvailability(LocalDate date, LocalTime time) {
+        return venueAvailability(date, time, 0);
+    }
+
+    @Transactional(readOnly = true)
+    public VenueAvailabilitySearchResponse venueAvailability(LocalDate date, LocalTime time, int windowMinutes) {
         LocalTime requestedTime = time.withSecond(0).withNano(0);
         ZonedDateTime requestedStart = ZonedDateTime.of(date, requestedTime, URUGUAY);
         ZonedDateTime now = ZonedDateTime.now(URUGUAY);
@@ -121,6 +127,7 @@ public class AvailabilityService {
                 entry.getKey(),
                 entry.getValue(),
                 requestedStart,
+                windowMinutes,
                 now,
                 hoursByVenue.getOrDefault(entry.getKey(), List.of()),
                 blocksByCourt,
@@ -137,26 +144,23 @@ public class AvailabilityService {
         UUID venueId,
         List<Court> venueCourts,
         ZonedDateTime requestedStart,
+        int windowMinutes,
         ZonedDateTime now,
         List<OpeningHour> venueHours,
         Map<UUID, List<CourtBlock>> blocksByCourt,
         Map<UUID, List<Reservation>> reservationsByCourt
     ) {
         List<AvailableCourtResponse> availableCourts = venueCourts.stream()
-            .filter(court -> isAvailable(
-                court,
-                requestedStart,
-                now,
-                venueHours,
+            .flatMap(court -> firstAvailableStart(
+                court, requestedStart, windowMinutes, now, venueHours,
                 blocksByCourt.getOrDefault(court.getId(), List.of()),
                 reservationsByCourt.getOrDefault(court.getId(), List.of())
-            ))
-            .map(court -> {
-                OffsetDateTime start = requestedStart.toOffsetDateTime();
-                OffsetDateTime end = requestedStart
+            ).map(startAt -> {
+                OffsetDateTime start = startAt.toOffsetDateTime();
+                OffsetDateTime end = startAt
                     .plusMinutes(court.getSlotMinutes())
                     .toOffsetDateTime();
-                return new AvailableCourtResponse(
+                return Stream.of(new AvailableCourtResponse(
                     court.getId(),
                     court.getName(),
                     start,
@@ -164,8 +168,8 @@ public class AvailabilityService {
                     court.getPricePerSlot(),
                     court.getCurrency(),
                     court.getSlotMinutes()
-                );
-            })
+                ));
+            }).orElseGet(Stream::empty))
             .toList();
 
         return new VenueAvailabilityResponse(
@@ -174,6 +178,27 @@ public class AvailabilityService {
             venueCourts.size(),
             availableCourts
         );
+    }
+
+    private static java.util.Optional<ZonedDateTime> firstAvailableStart(
+        Court court,
+        ZonedDateTime requestedStart,
+        int windowMinutes,
+        ZonedDateTime now,
+        List<OpeningHour> venueHours,
+        List<CourtBlock> courtBlocks,
+        List<Reservation> courtReservations
+    ) {
+        ZonedDateTime endExclusive = requestedStart.plusMinutes(Math.max(windowMinutes, 1));
+        for (ZonedDateTime candidate = requestedStart;
+             candidate.isBefore(endExclusive);
+             candidate = candidate.plusMinutes(15)) {
+            if (isAvailable(court, candidate, now, venueHours, courtBlocks, courtReservations)) {
+                return java.util.Optional.of(candidate);
+            }
+            if (windowMinutes == 0) break;
+        }
+        return java.util.Optional.empty();
     }
 
     private static boolean isAvailable(

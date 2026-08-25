@@ -18,5 +18,5 @@ public final class CourtDtos {
     ) {}
     public record CourtResponse(UUID id, UUID venueId, String name, FootballFormat footballFormat,
                                 SurfaceType surface, boolean covered, BigDecimal pricePerSlot,
-                                String currency, short slotMinutes, boolean active) {}
+                                String currency, short slotMinutes, boolean active, String coverImageUrl) {}
 }

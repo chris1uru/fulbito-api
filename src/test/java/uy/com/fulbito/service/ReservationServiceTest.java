@@ -18,6 +18,7 @@ import uy.com.fulbito.dto.ReservationDtos.ReservationRequest;
 import uy.com.fulbito.error.ApiException;
 import uy.com.fulbito.repository.OpeningHourRepository;
 import uy.com.fulbito.repository.ReservationRepository;
+import uy.com.fulbito.repository.CourtImageRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
@@ -38,12 +39,13 @@ class ReservationServiceTest {
     @Mock private ReservationRepository reservations;
     @Mock private CourtService courts;
     @Mock private OpeningHourRepository hours;
+    @Mock private CourtImageRepository courtImages;
 
     private ReservationService service;
 
     @BeforeEach
     void setUp() {
-        service = new ReservationService(reservations, courts, hours);
+        service = new ReservationService(reservations, courts, hours, courtImages);
     }
 
     @Test

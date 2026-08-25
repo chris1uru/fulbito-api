@@ -3,6 +3,8 @@ import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import uy.com.fulbito.dto.AuthDtos.UpdateProfileRequest;
+import uy.com.fulbito.dto.AuthDtos.ChangePasswordRequest;
+import org.springframework.http.HttpStatus;
 import uy.com.fulbito.dto.AuthDtos.UserResponse;
 import uy.com.fulbito.security.CurrentUserService;
 import uy.com.fulbito.service.AuthService;
@@ -31,5 +33,17 @@ public class UserController {
         @Valid @RequestBody UpdateProfileRequest request
     ) {
         return users.updateProfile(current.require(authentication).getId(), request);
+    }
+
+    @PutMapping("/me/password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void changePassword(Authentication authentication, @Valid @RequestBody ChangePasswordRequest request) {
+        users.changePassword(current.require(authentication), request);
+    }
+
+    @DeleteMapping("/me")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteMe(Authentication authentication) {
+        users.deleteAccount(current.require(authentication));
     }
 }

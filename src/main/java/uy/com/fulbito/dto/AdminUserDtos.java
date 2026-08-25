@@ -12,7 +12,7 @@ public final class AdminUserDtos {
         @NotBlank @Size(max = 80) String firstName,
         @NotBlank @Size(max = 80) String lastName,
         @NotBlank @Email @Size(max = 254) String email,
-        @NotBlank @Size(min = 8, max = 72) String password,
+        @NotBlank @Size(min = 10, max = 72) String password,
         @Pattern(regexp = "^\\+[1-9][0-9]{7,14}$") String phone,
         @NotBlank @Size(max = 20) String nationalId,
         @NotNull UserRole role
