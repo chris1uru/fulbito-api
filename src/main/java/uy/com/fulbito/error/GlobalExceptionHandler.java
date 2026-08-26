@@ -34,6 +34,8 @@ public class GlobalExceptionHandler {
         String details = Optional.ofNullable(ex.getMostSpecificCause()).map(Throwable::getMessage).orElse("");
         String message = details.contains("ex_court_occupancies_no_overlap")
             ? "La cancha ya esta ocupada total o parcialmente en ese horario"
+            : details.contains("ex_reservations_player_no_overlap")
+                ? "Ya tenes una reserva confirmada que se superpone con ese horario"
             : details.contains("ck_venue_images_max_8")
                 ? "El complejo ya alcanzo el maximo de 8 imagenes"
                 : details.contains("ck_court_images_max_5")
