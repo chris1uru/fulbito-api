@@ -132,6 +132,7 @@ public class ReservationService {
 
             r.getCourt().getId(),
             r.getCourt().getName(),
+            r.getCourt().getFootballFormat(),
             r.getCourt().getVenue().getId(),
             r.getCourt().getVenue().getName(),
             courtImageUrl,

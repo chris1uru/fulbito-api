@@ -20,6 +20,7 @@ public final class ReservationDtos {
     UUID id,
     UUID courtId,
     String courtName,
+    FootballFormat footballFormat,
     UUID venueId,
     String venueName,
     String courtImageUrl,
