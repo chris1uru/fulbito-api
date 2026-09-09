@@ -25,5 +25,6 @@ public final class ImageDtos {
         @NotBlank @Size(max=200) String signature,
         @Min(0) short sortOrder
     ) {}
+    public record ImageOrderRequest(@Min(0) short sortOrder) {}
     public record ImageResponse(UUID id,String url,String storageKey,short sortOrder,boolean cover) {}
 }

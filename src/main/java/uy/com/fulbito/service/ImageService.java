@@ -17,6 +17,7 @@ import uy.com.fulbito.repository.CourtImageRepository;
 import uy.com.fulbito.repository.VenueImageRepository;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.UUID;
 
 @Service
@@ -133,6 +134,32 @@ public class ImageService {
         clearCover(image.getVenue().getId());
         image.setCover(true);
         return response(venueImages.saveAndFlush(image));
+    }
+
+    @Transactional
+    public List<ImageResponse> reorderVenue(UUID id, short requestedOrder, AppUser actor) {
+        VenueImage image = venueImages.findById(id)
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Imagen no encontrada"));
+        UUID venueId = image.getVenue().getId();
+        venues.owned(venueId, actor);
+        List<VenueImage> ordered = new ArrayList<>(venueImages.findByVenueIdOrderBySortOrder(venueId));
+        ordered.removeIf(value -> value.getId().equals(id));
+        ordered.add(Math.min(requestedOrder, (short) ordered.size()), image);
+        for (short index = 0; index < ordered.size(); index++) ordered.get(index).setSortOrder(index);
+        return venueImages.saveAllAndFlush(ordered).stream().map(ImageService::response).toList();
+    }
+
+    @Transactional
+    public List<ImageResponse> reorderCourt(UUID id, short requestedOrder, AppUser actor) {
+        CourtImage image = courtImages.findById(id)
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Imagen no encontrada"));
+        UUID courtId = image.getCourt().getId();
+        courts.owned(courtId, actor);
+        List<CourtImage> ordered = new ArrayList<>(courtImages.findByCourtIdOrderBySortOrder(courtId));
+        ordered.removeIf(value -> value.getId().equals(id));
+        ordered.add(Math.min(requestedOrder, (short) ordered.size()), image);
+        for (short index = 0; index < ordered.size(); index++) ordered.get(index).setSortOrder(index);
+        return courtImages.saveAllAndFlush(ordered).stream().map(ImageService::response).toList();
     }
 
     @Transactional

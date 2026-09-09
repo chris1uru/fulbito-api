@@ -47,6 +47,9 @@ public class UserService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "La nueva contrasena debe ser diferente");
         user.setPasswordHash(passwords.encode(request.newPassword()));
         user.setAuthVersion(user.getAuthVersion() + 1);
+        // El usuario llega desde el filtro de seguridad fuera de esta transacción; por eso puede
+        // estar detached y requiere un merge explícito para persistir el cambio.
+        users.save(user);
     }
 
     @Transactional
@@ -65,6 +68,7 @@ public class UserService {
         user.setPhone(null);
         user.setStatus(UserStatus.INACTIVE);
         user.setAuthVersion(user.getAuthVersion() + 1);
+        users.save(user);
     }
 
     private static String clean(String value) {

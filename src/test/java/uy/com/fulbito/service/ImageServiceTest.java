@@ -15,6 +15,7 @@ import uy.com.fulbito.repository.CourtImageRepository;
 import uy.com.fulbito.repository.VenueImageRepository;
 
 import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -102,5 +103,36 @@ class ImageServiceTest {
         verify(venues).owned(venueId, actor);
         verify(storage).delete(publicId);
         verify(venueImages).delete(image);
+    }
+
+    @Test
+    void movingVenueImageNormalizesEverySortOrderAtomically() {
+        UUID venueId = UUID.randomUUID();
+        UUID firstId = UUID.randomUUID();
+        UUID secondId = UUID.randomUUID();
+        UUID thirdId = UUID.randomUUID();
+        AppUser actor = mock(AppUser.class);
+        Venue venue = mock(Venue.class);
+        VenueImage first = mock(VenueImage.class);
+        VenueImage second = mock(VenueImage.class);
+        VenueImage third = mock(VenueImage.class);
+
+        when(first.getId()).thenReturn(firstId);
+        when(second.getId()).thenReturn(secondId);
+        when(third.getId()).thenReturn(thirdId);
+        when(third.getVenue()).thenReturn(venue);
+        when(venue.getId()).thenReturn(venueId);
+        when(venueImages.findById(thirdId)).thenReturn(Optional.of(third));
+        when(venueImages.findByVenueIdOrderBySortOrder(venueId))
+            .thenReturn(List.of(first, second, third));
+        when(venueImages.saveAllAndFlush(anyList()))
+            .thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.reorderVenue(thirdId, (short) 0, actor);
+
+        verify(venues).owned(venueId, actor);
+        verify(third).setSortOrder((short) 0);
+        verify(first).setSortOrder((short) 1);
+        verify(second).setSortOrder((short) 2);
     }
 }

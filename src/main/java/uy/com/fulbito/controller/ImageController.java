@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import uy.com.fulbito.dto.ImageDtos.CourtImageRequest;
 import uy.com.fulbito.dto.ImageDtos.ImageResponse;
+import uy.com.fulbito.dto.ImageDtos.ImageOrderRequest;
 import uy.com.fulbito.dto.ImageDtos.UploadSignatureResponse;
 import uy.com.fulbito.dto.ImageDtos.VenueImageRequest;
 import uy.com.fulbito.security.CurrentUserService;
@@ -89,6 +90,26 @@ public class ImageController {
     @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
     public ImageResponse setVenueCover(@PathVariable UUID id, Authentication auth) {
         return service.setVenueCover(id, current.require(auth));
+    }
+
+    @PatchMapping("/api/owner/venue-images/{id}/order")
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
+    public List<ImageResponse> reorderVenue(
+        @PathVariable UUID id,
+        @Valid @RequestBody ImageOrderRequest request,
+        Authentication auth
+    ) {
+        return service.reorderVenue(id, request.sortOrder(), current.require(auth));
+    }
+
+    @PatchMapping("/api/owner/court-images/{id}/order")
+    @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
+    public List<ImageResponse> reorderCourt(
+        @PathVariable UUID id,
+        @Valid @RequestBody ImageOrderRequest request,
+        Authentication auth
+    ) {
+        return service.reorderCourt(id, request.sortOrder(), current.require(auth));
     }
 
     @DeleteMapping("/api/owner/venue-images/{id}")
