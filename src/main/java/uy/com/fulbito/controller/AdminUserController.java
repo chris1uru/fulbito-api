@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.validation.annotation.Validated;
 import uy.com.fulbito.domain.enums.UserRole;
 import uy.com.fulbito.dto.AdminUserDtos.*;
 import uy.com.fulbito.service.AdminUserService;
@@ -13,6 +14,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/admin/users")
 @PreAuthorize("hasRole('ADMIN')")
+@Validated
 public class AdminUserController {
     private final AdminUserService service;
 
@@ -20,7 +22,7 @@ public class AdminUserController {
 
     @GetMapping
     public List<AdminUserResponse> search(
-        @RequestParam(defaultValue = "") String query,
+        @RequestParam(defaultValue = "") @jakarta.validation.constraints.Size(max = 100) String query,
         @RequestParam(required = false) UserRole role
     ) {
         return service.search(query, role);

@@ -217,13 +217,13 @@ public class ImageService {
 
     private static ImageResponse response(VenueImage image) {
         return new ImageResponse(
-            image.getId(), image.getUrl(), image.getStorageKey(), image.getSortOrder(), image.isCover()
+            image.getId(), image.getUrl(), image.getSortOrder(), image.isCover()
         );
     }
 
     private static ImageResponse response(CourtImage image) {
         return new ImageResponse(
-            image.getId(), image.getUrl(), image.getStorageKey(), image.getSortOrder(), false
+            image.getId(), image.getUrl(), image.getSortOrder(), false
         );
     }
 }

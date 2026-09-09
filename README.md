@@ -51,6 +51,10 @@ Luego:
 
 Swagger queda disponible en `http://localhost:8080/swagger-ui.html`.
 
+El HTTP local es intencional y no requiere certificados. `REQUIRE_HTTPS` queda en `false` para
+desarrollo; al desplegar detras de un proxy o balanceador TLS, configuralo en `true`. La API respeta
+los encabezados reenviados por el proxy y entonces rechaza solicitudes que no hayan llegado por HTTPS.
+
 `run-local.ps1` detecta automaticamente el JDK configurado en `JAVA_HOME` o disponible
 en el `PATH`; no depende de la ubicacion del proyecto ni de una ruta fija del JDK.
 
@@ -75,7 +79,8 @@ automaticamente: usalo solamente en la base de desarrollo desde el SQL Editor de
 Solo los jugadores pueden registrarse públicamente. Los dueños son creados por un administrador,
 con email y cédula únicos, y luego se asignan explícitamente a uno o más complejos.
 Las contrasenas se guardan con BCrypt (factor 12), nunca en texto plano. El JWT contiene el ID y rol,
-vence a las ocho horas y debe enviarse como `Authorization: Bearer TOKEN`. La API no usa sesiones ni cookies.
+vence segun `JWT_EXPIRATION` (dos horas por defecto) y debe enviarse como
+`Authorization: Bearer TOKEN`. La API no usa sesiones ni cookies.
 
 Las comprobaciones de rol no reemplazan las comprobaciones de propiedad: un OWNER solo puede modificar
 registros vinculados a sus propios complejos. Los estados sensibles, el precio y el usuario autenticado se

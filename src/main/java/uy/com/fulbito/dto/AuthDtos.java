@@ -14,7 +14,10 @@ public final class AuthDtos {
         @NotBlank @Size(min=10, max=72) String password,
         @Pattern(regexp="^\\+[1-9][0-9]{7,14}$") String phone
     ) {}
-    public record LoginRequest(@NotBlank @Email String email, @NotBlank String password) {}
+    public record LoginRequest(
+        @NotBlank @Email @Size(max=254) String email,
+        @NotBlank @Size(max=72) String password
+    ) {}
     public record ChangePasswordRequest(
         @NotBlank @Size(max=72) String currentPassword,
         @NotBlank @Size(min=10, max=72) String newPassword

@@ -112,4 +112,42 @@ class ReservationServiceTest {
         assertEquals("No se puede cancelar una reserva marcada como paga", error.getMessage());
         verify(reservation, never()).setStatus(any());
     }
+
+    @Test
+    void ownerCannotReadReservationOutsideOwnedVenues() {
+        UUID reservationId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        AppUser owner = mock(AppUser.class);
+        when(owner.getRole()).thenReturn(UserRole.OWNER);
+        when(owner.getId()).thenReturn(ownerId);
+        when(reservations.findByIdAndCourtVenueOwnerId(reservationId, ownerId))
+            .thenReturn(Optional.empty());
+
+        ApiException error = assertThrows(
+            ApiException.class,
+            () -> service.one(reservationId, owner)
+        );
+
+        assertEquals("Reserva no encontrada", error.getMessage());
+        verify(reservations, never()).findById(reservationId);
+    }
+
+    @Test
+    void playerCannotReadAnotherPlayersReservation() {
+        UUID reservationId = UUID.randomUUID();
+        UUID playerId = UUID.randomUUID();
+        AppUser player = mock(AppUser.class);
+        when(player.getRole()).thenReturn(UserRole.PLAYER);
+        when(player.getId()).thenReturn(playerId);
+        when(reservations.findByIdAndPlayerId(reservationId, playerId))
+            .thenReturn(Optional.empty());
+
+        ApiException error = assertThrows(
+            ApiException.class,
+            () -> service.one(reservationId, player)
+        );
+
+        assertEquals("Reserva no encontrada", error.getMessage());
+        verify(reservations, never()).findById(reservationId);
+    }
 }

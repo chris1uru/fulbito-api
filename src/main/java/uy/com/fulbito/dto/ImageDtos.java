@@ -26,5 +26,5 @@ public final class ImageDtos {
         @Min(0) short sortOrder
     ) {}
     public record ImageOrderRequest(@Min(0) short sortOrder) {}
-    public record ImageResponse(UUID id,String url,String storageKey,short sortOrder,boolean cover) {}
+    public record ImageResponse(UUID id,String url,short sortOrder,boolean cover) {}
 }

@@ -79,7 +79,6 @@ class ImageServiceTest {
 
         verify(previousCover).setCover(false);
         assertEquals(secureUrl, result.url());
-        assertEquals(publicId, result.storageKey());
         assertEquals(2, result.sortOrder());
         assertTrue(result.cover());
     }
