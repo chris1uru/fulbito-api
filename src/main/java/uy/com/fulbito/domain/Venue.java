@@ -15,6 +15,7 @@ public class Venue extends BaseEntity {
     @Column(length = 20) private String phone;
     @Column(name = "whatsapp_phone", length = 20) private String whatsappPhone;
     @Column(nullable = false, length = 64) private String timezone;
+    @Column(name = "cancellation_notice_hours", nullable = false) private short cancellationNoticeHours = 4;
     @Enumerated(EnumType.STRING) @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(nullable = false, columnDefinition = "venue_status") private VenueStatus status;
 
@@ -30,6 +31,8 @@ public class Venue extends BaseEntity {
     public void setWhatsappPhone(String whatsappPhone) { this.whatsappPhone = whatsappPhone; }
     public String getTimezone() { return timezone; }
     public void setTimezone(String timezone) { this.timezone = timezone; }
+    public short getCancellationNoticeHours() { return cancellationNoticeHours; }
+    public void setCancellationNoticeHours(short cancellationNoticeHours) { this.cancellationNoticeHours = cancellationNoticeHours; }
     public VenueStatus getStatus() { return status; }
     public void setStatus(VenueStatus status) { this.status = status; }
 }

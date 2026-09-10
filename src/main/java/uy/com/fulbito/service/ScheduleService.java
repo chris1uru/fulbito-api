@@ -7,6 +7,7 @@ import uy.com.fulbito.domain.*;
 import uy.com.fulbito.dto.ScheduleDtos.*;
 import uy.com.fulbito.error.ApiException;
 import uy.com.fulbito.repository.*;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.*;
 
@@ -18,9 +19,13 @@ public class ScheduleService {
         this.hours=hours; this.blocks=blocks; this.venues=venues; this.courts=courts;
     }
     @Transactional public OpeningHourResponse addHour(UUID venueId, AppUser owner, OpeningHourRequest r) {
-        if (!r.closesAt().isAfter(r.opensAt())) throw new ApiException(HttpStatus.BAD_REQUEST,"La hora de cierre debe ser posterior a la apertura");
-        OpeningHour h=new OpeningHour(); h.setVenue(venues.owned(venueId,owner)); h.setDayOfWeek(r.dayOfWeek()); h.setOpensAt(r.opensAt()); h.setClosesAt(r.closesAt());
-        return hour(hours.save(h));
+        LocalTime opensAt = LocalTime.parse(r.opensAt());
+        LocalTime closesAt = LocalTime.parse(r.closesAt());
+        if (!closesAt.isAfter(opensAt)) throw new ApiException(HttpStatus.BAD_REQUEST,"La hora de cierre debe ser posterior a la apertura");
+        OpeningHour h=new OpeningHour(); h.setVenue(venues.owned(venueId,owner)); h.setDayOfWeek(r.dayOfWeek());
+        h.setOpensAt(opensAt);
+        h.setClosesAt(closesAt);
+        return hour(hours.saveAndFlush(h));
     }
     @Transactional(readOnly=true) public List<OpeningHourResponse> listHours(UUID venueId) { return hours.findByVenueIdOrderByDayOfWeekAscOpensAtAsc(venueId).stream().map(ScheduleService::hour).toList(); }
     @Transactional public void deleteHour(UUID id, AppUser owner) {
@@ -35,7 +40,12 @@ public class ScheduleService {
     @Transactional(readOnly=true) public List<CourtBlockResponse> listBlocks(UUID courtId, OffsetDateTime from, OffsetDateTime to, AppUser owner) {
         courts.owned(courtId,owner); return blocks.findByCourtIdAndEndsAtAfterAndStartsAtBeforeOrderByStartsAt(courtId,from,to).stream().map(ScheduleService::block).toList();
     }
-    @Transactional public void deleteBlock(UUID id,AppUser owner){ CourtBlock b=blocks.findByIdAndCourtVenueOwnerId(id,owner.getId()).orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"Bloqueo no encontrado")); blocks.delete(b); }
+    @Transactional public void deleteBlock(UUID id,AppUser owner){
+        CourtBlock b = owner.getRole() == uy.com.fulbito.domain.enums.UserRole.ADMIN
+            ? blocks.findById(id).orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"Bloqueo no encontrado"))
+            : blocks.findByIdAndCourtVenueOwnerId(id,owner.getId()).orElseThrow(()->new ApiException(HttpStatus.NOT_FOUND,"Bloqueo no encontrado"));
+        blocks.delete(b);
+    }
     private static OpeningHourResponse hour(OpeningHour h){return new OpeningHourResponse(h.getId(),h.getVenue().getId(),h.getDayOfWeek(),h.getOpensAt(),h.getClosesAt());}
     private static CourtBlockResponse block(CourtBlock b){return new CourtBlockResponse(b.getId(),b.getCourt().getId(),b.getStartsAt(),b.getEndsAt(),b.getReason());}
 }

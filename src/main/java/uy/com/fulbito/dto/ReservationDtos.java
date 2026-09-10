@@ -16,8 +16,28 @@ public final class ReservationDtos {
         @Pattern(regexp="^\\+[1-9][0-9]{7,14}$") String playerPhone,
         @Size(max=500) String notes
     ) {}
-    public record ReservationResponse(UUID id, UUID courtId, UUID playerId, OffsetDateTime startsAt,
-        OffsetDateTime endsAt, ReservationStatus status, BigDecimal priceAmount, String currency,
-        String playerName, String playerPhone, String notes, PaymentStatus paymentStatus,
-        OffsetDateTime paidAt, OffsetDateTime cancelledAt) {}
+    public record ReservationResponse(
+    UUID id,
+    UUID courtId,
+    String courtName,
+    FootballFormat footballFormat,
+    UUID venueId,
+    String venueName,
+    String courtImageUrl,
+    UUID playerId,
+    OffsetDateTime startsAt,
+    OffsetDateTime endsAt,
+    ReservationStatus status,
+    BigDecimal priceAmount,
+    String currency,
+    String playerName,
+    String playerPhone,
+    String notes,
+    short cancellationNoticeHours,
+    OffsetDateTime cancellationDeadline,
+    boolean lateCancellation,
+    PaymentStatus paymentStatus,
+    OffsetDateTime paidAt,
+    OffsetDateTime cancelledAt
+) {}
 }

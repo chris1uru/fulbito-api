@@ -12,7 +12,9 @@ public class AppUser extends BaseEntity {
     @Column(name = "password_hash", nullable = false) private String passwordHash;
     @Column(name = "first_name", nullable = false, length = 80) private String firstName;
     @Column(name = "last_name", nullable = false, length = 80) private String lastName;
+    @Column(name = "national_id", unique = true, length = 8) private String nationalId;
     @Column(length = 20) private String phone;
+    @Column(name = "auth_version", nullable = false) private int authVersion;
 
     @Enumerated(EnumType.STRING) @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(nullable = false, columnDefinition = "user_role") private UserRole role;
@@ -27,10 +29,14 @@ public class AppUser extends BaseEntity {
     public void setFirstName(String firstName) { this.firstName = firstName; }
     public String getLastName() { return lastName; }
     public void setLastName(String lastName) { this.lastName = lastName; }
+    public String getNationalId() { return nationalId; }
+    public void setNationalId(String nationalId) { this.nationalId = nationalId; }
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
     public UserRole getRole() { return role; }
     public void setRole(UserRole role) { this.role = role; }
     public UserStatus getStatus() { return status; }
     public void setStatus(UserStatus status) { this.status = status; }
+    public int getAuthVersion() { return authVersion; }
+    public void setAuthVersion(int authVersion) { this.authVersion = authVersion; }
 }

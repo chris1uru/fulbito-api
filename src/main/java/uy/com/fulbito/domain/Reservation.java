@@ -26,6 +26,8 @@ public class Reservation extends BaseEntity {
     @Column(name = "player_name_snapshot", nullable = false, length = 161) private String playerNameSnapshot;
     @Column(name = "player_phone_snapshot", length = 20) private String playerPhoneSnapshot;
     @Column(length = 500) private String notes;
+    @Column(name = "cancellation_notice_hours", nullable = false) private short cancellationNoticeHours;
+    @Column(name = "late_cancellation", nullable = false) private boolean lateCancellation;
     @Enumerated(EnumType.STRING) @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "payment_status", nullable = false, columnDefinition = "payment_status") private PaymentStatus paymentStatus;
     @Column(name = "paid_at") private OffsetDateTime paidAt;
@@ -43,6 +45,8 @@ public class Reservation extends BaseEntity {
     public String getPlayerNameSnapshot() { return playerNameSnapshot; } public void setPlayerNameSnapshot(String playerNameSnapshot) { this.playerNameSnapshot = playerNameSnapshot; }
     public String getPlayerPhoneSnapshot() { return playerPhoneSnapshot; } public void setPlayerPhoneSnapshot(String playerPhoneSnapshot) { this.playerPhoneSnapshot = playerPhoneSnapshot; }
     public String getNotes() { return notes; } public void setNotes(String notes) { this.notes = notes; }
+    public short getCancellationNoticeHours() { return cancellationNoticeHours; } public void setCancellationNoticeHours(short cancellationNoticeHours) { this.cancellationNoticeHours = cancellationNoticeHours; }
+    public boolean isLateCancellation() { return lateCancellation; } public void setLateCancellation(boolean lateCancellation) { this.lateCancellation = lateCancellation; }
     public PaymentStatus getPaymentStatus() { return paymentStatus; } public void setPaymentStatus(PaymentStatus paymentStatus) { this.paymentStatus = paymentStatus; }
     public OffsetDateTime getPaidAt() { return paidAt; } public void setPaidAt(OffsetDateTime paidAt) { this.paidAt = paidAt; }
     public AppUser getPaidConfirmedBy() { return paidConfirmedBy; } public void setPaidConfirmedBy(AppUser paidConfirmedBy) { this.paidConfirmedBy = paidConfirmedBy; }
